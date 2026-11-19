@@ -4,7 +4,7 @@ param(
 )
 $ErrorActionPreference = "Stop"
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
-$version = "1.0.0"
+$version = (Get-Content (Join-Path $here "VERSION") -Raw).Trim()
 
 if ($Uninstall) {
   $cfg = Join-Path $env:APPDATA "potmpv"

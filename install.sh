@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VERSION="1.0.0"
+VERSION="$(cat "$HERE/VERSION" 2>/dev/null || echo 1.1.0)"
 CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/potmpv"
 BIN="${HOME}/.local/bin"
 APPS="${XDG_DATA_HOME:-$HOME/.local/share}/applications"

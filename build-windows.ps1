@@ -26,5 +26,6 @@ if (-not $iscc) {
 }
 if (-not $iscc) { throw "Inno Setup 6 is required (winget install JRSoftware.InnoSetup)" }
 
-& $iscc.Source (Join-Path $here "installer\potmpv.iss")
-Write-Host "Built dist\PotMPV-1.0.0-setup.exe"
+$ver = (Get-Content (Join-Path $here "VERSION") -Raw).Trim()
+& $iscc.Source "/DMyAppVersion=$ver" (Join-Path $here "installer\potmpv.iss")
+Write-Host "Built dist\PotMPV-$ver-setup.exe"
