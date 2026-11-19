@@ -159,11 +159,15 @@ local render
 local function schedule()
     if pending then return end
     pending = true
-    mp.add_timeout(0.03, function() pending = false; render() end)
+    mp.add_timeout(0.08, function() pending = false; render() end)
 end
 
 local function close()
-    if not M.open then return end
+    if not M.open then
+        mp.commandv("script-message-to", "pot_ui", "pot-unlock")
+        pcall(mp.set_property_native, "user-data/pot-menu", false)
+        return
+    end
     last_data = nil
     M.open = false
     M.pages = {}
@@ -175,6 +179,7 @@ local function close()
         "MBTN_LEFT", "MBTN_LEFT_DBL", "MBTN_RIGHT", "MBTN_MID", "WHEEL_UP", "WHEEL_DOWN" }) do
         mp.remove_key_binding("pot-menu-" .. k)
     end
+    pcall(mp.set_property_native, "user-data/pot-menu", false)
     mp.commandv("script-message-to", "pot_ui", "pot-unlock")
 end
 
@@ -312,6 +317,7 @@ local function open(items, px, py)
     layout_page(page)
     place(page, px, py)
     M.pages[1] = page
+    pcall(mp.set_property_native, "user-data/pot-menu", true)
     mp.commandv("script-message-to", "pot_ui", "pot-lock")
     for _, k in ipairs({ "ESC", "UP", "DOWN", "LEFT", "RIGHT", "ENTER", "KP_ENTER",
         "MBTN_LEFT", "MBTN_LEFT_DBL", "MBTN_RIGHT", "MBTN_MID", "WHEEL_UP", "WHEEL_DOWN" }) do
@@ -939,7 +945,10 @@ local function root_menu()
             mp.commandv("script-message-to", "pot_prefs", "open")
         end },
         { label = "About PotMPV", action = function()
-            pcall_show("PotMPV 1.1.1  |  " .. tostring(mp.get_property("mpv-version")))
+            local ver = "1.1.2"
+            local vf = io.open(utils.join_path(mp.get_property("config-dir") or ".", "VERSION"), "r")
+            if vf then ver = (vf:read("*l") or ver):gsub("%s+$", ""); vf:close() end
+            pcall_show("PotMPV " .. ver .. "  |  " .. tostring(mp.get_property("mpv-version")))
         end },
         { sep = true },
         { label = "Exit", accel = "Ctrl+Q", action = function() mp.commandv("quit") end },

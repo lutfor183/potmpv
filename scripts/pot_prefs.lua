@@ -144,6 +144,106 @@ local function cat_ui()
     }
 end
 
+local P, schedule
+
+local KEY_DEFS = {
+    { action = "pause",    label = "Play / Pause",        cmd = "cycle pause",              preset = "SPACE" },
+    { action = "seek_back",label = "Seek back 5 s",       cmd = "seek -5",                  preset = "LEFT" },
+    { action = "seek_fwd", label = "Seek forward 5 s",    cmd = "seek 5",                   preset = "RIGHT" },
+    { action = "vol_up",   label = "Volume up",           cmd = "add volume 5",             preset = "UP" },
+    { action = "vol_down", label = "Volume down",         cmd = "add volume -5",            preset = "DOWN" },
+    { action = "mute",     label = "Mute",                cmd = "cycle mute",               preset = "m" },
+    { action = "full",     label = "Fullscreen",          cmd = "cycle fullscreen",         preset = "f" },
+    { action = "subs",     label = "Toggle subtitles",    cmd = "cycle sub-visibility",     preset = "v" },
+    { action = "playlist", label = "Playlist drawer",     cmd = "script-message pot-toggle-playlist", preset = "TAB" },
+    { action = "aspect",   label = "Cycle aspect ratio",  cmd = "cycle-values video-aspect-override 16:9 4:3 no", preset = "A" },
+}
+
+local KEYS = {}
+for _, d in ipairs(KEY_DEFS) do KEYS[d.action] = d.preset end
+
+local CAP_KEYS = { "SPACE", "ENTER", "TAB" }
+for c = string.byte("a"), string.byte("z") do CAP_KEYS[#CAP_KEYS + 1] = string.char(c) end
+for c = string.byte("0"), string.byte("9") do CAP_KEYS[#CAP_KEYS + 1] = string.char(c) end
+for i = 1, 12 do CAP_KEYS[#CAP_KEYS + 1] = "F" .. i end
+
+local function keys_path()
+    return utils.join_path(mp.get_property("config-dir") or ".", "potmpv-keys.conf")
+end
+
+local function cmd_for(action)
+    for _, d in ipairs(KEY_DEFS) do if d.action == action then return d.cmd end end
+end
+
+local function write_keys()
+    local out = { "# PotMPV key bindings (edited from Preferences > Shortcuts)" }
+    for _, d in ipairs(KEY_DEFS) do
+        out[#out + 1] = string.format("%-10s %s", KEYS[d.action] or d.preset, d.cmd)
+    end
+    local f = io.open(keys_path(), "w")
+    if f then f:write(table.concat(out, "\n") .. "\n"); f:close() end
+    pcall(mp.commandv, "load-input-conf", keys_path())
+end
+
+local function load_keys()
+    local f = io.open(keys_path(), "r")
+    if f then
+        for line in f:lines() do
+            local k, cmd = line:match("^(%S+)%s+(.+)$")
+            if k and cmd and k:sub(1, 1) ~= "#" then
+                for _, d in ipairs(KEY_DEFS) do
+                    if d.cmd == cmd then KEYS[d.action] = k end
+                end
+            end
+        end
+        f:close()
+    end
+    pcall(mp.commandv, "load-input-conf", keys_path())
+end
+
+local function key_name(k)
+    if not k then return "-" end
+    if k == "SPACE" then return "Space" end
+    if k == "ENTER" then return "Enter" end
+    if k == "TAB" then return "Tab" end
+    if #k == 1 then return k:upper() end
+    return k
+end
+
+local function stop_capture()
+    if P.capture then
+        for _, k in ipairs(CAP_KEYS) do mp.remove_key_binding("pot-prefs-cap-" .. k) end
+        P.capture = nil
+        schedule()
+    end
+end
+
+local function finish_capture(k)
+    local action = P.capture
+    if not action then return end
+    KEYS[action] = k
+    write_keys()
+    stop_capture()
+    mp.commandv("show-text", "Bound " .. k .. " to " .. action, "1500")
+end
+
+local function start_capture(action)
+    stop_capture()
+    P.capture = action
+    for _, k in ipairs(CAP_KEYS) do
+        mp.add_forced_key_binding(k, "pot-prefs-cap-" .. k, function()
+            if k == "ESC" then stop_capture() else finish_capture(k) end
+        end)
+    end
+    schedule()
+end
+
+local function cat_keys()
+    local r = {}
+    for _, d in ipairs(KEY_DEFS) do r[#r + 1] = { label = d.label, kind = "key", action = d.action } end
+    return r
+end
+
 local cats = {
     { name = "Playback", rows = cat_playback },
     { name = "Video", rows = cat_video },
@@ -151,9 +251,10 @@ local cats = {
     { name = "Subtitles", rows = cat_sub },
     { name = "Screenshots", rows = cat_shots },
     { name = "Interface", rows = cat_ui },
+    { name = "Shortcuts", rows = cat_keys },
 }
 
-local P = {
+P = {
     open = false, cat = 1, sel = 1, offset = 0, saved = {}, baseline = {},
     w = 800, h = 560, s = 1, ml = 0, mt = 0, hit = {},
 }
@@ -178,6 +279,7 @@ local function apply_value(key, val)
 end
 
 local function current_value(row)
+    if row.kind == "key" then return KEYS[row.action] end
     if row.custom then
         if row.custom == "ui.scale" then return o.scale end
         if row.custom == "ui.hide" then return o.hide_delay end
@@ -188,6 +290,10 @@ end
 
 local function value_string(row)
     if row.kind == "bool" then return yesno(current_value(row)) end
+    if row.kind == "key" then
+        if P.capture == row.action then return "Press a key..." end
+        return key_name(KEYS[row.action])
+    end
     if row.kind == "choice" then
         local cur = mp.get_property(row.prop)
         for i, v in ipairs(row.values) do
@@ -210,6 +316,10 @@ local function save()
 end
 
 local function set_row(row, dir)
+    if row.kind == "key" then
+        start_capture(row.action)
+        return
+    end
     if row.kind == "bool" then
         local cur = not not current_value(row)
         local nv = not cur
@@ -293,7 +403,7 @@ end
 
 local render
 
-local function schedule()
+schedule = function()
     if P.pending then return end
     P.pending = true
     mp.add_timeout(0.03, function() P.pending = false; render() end)
@@ -301,7 +411,9 @@ end
 
 local function close()
     if not P.open then return end
+    stop_capture()
     P.open = false
+    pcall(mp.set_property_native, "user-data/pot-prefs", false)
     if shown then overlay:remove(); shown = false end
     for _, k in ipairs({ "ESC", "UP", "DOWN", "LEFT", "RIGHT", "ENTER", "KP_ENTER", "TAB",
         "MBTN_LEFT", "MBTN_LEFT_DBL", "MBTN_RIGHT", "WHEEL_UP", "WHEEL_DOWN" }) do
@@ -364,7 +476,9 @@ local function click()
     local idx, row, y = row_at(mx, my)
     if not row then return end
     P.sel = idx
-    if row.kind == "bool" then
+    if row.kind == "key" then
+        start_capture(row.action)
+    elseif row.kind == "bool" then
         set_row(row, 0)
     elseif row.kind == "choice" then
         set_row(row, 1)
@@ -487,6 +601,7 @@ end
 local function open_prefs()
     if P.open then close(); return end
     P.open = true
+    pcall(mp.set_property_native, "user-data/pot-prefs", true)
     P.hit = {}
     layout()
     mp.commandv("script-message-to", "pot_ui", "pot-lock")
@@ -555,6 +670,8 @@ mp.add_timeout(0.8, function()
     end
     f:close()
 end)
+
+mp.add_timeout(0.9, load_keys)
 
 mp.add_periodic_timer(0.4, function()
     if P.open then schedule() end

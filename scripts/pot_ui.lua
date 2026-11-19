@@ -221,8 +221,9 @@ local dirty = true
 local pending = false
 local last_data, last_w, last_h
 
+local BLANK = "{\\an7\\pos(0,0)\\1a&HFF&}"
 local function release()
-    if shown then overlay:remove(); shown = false end
+    if shown then overlay.data = BLANK; overlay:update() end
     last_data = nil
 end
 
@@ -320,7 +321,7 @@ local render
 local function schedule()
     if pending then return end
     pending = true
-    mp.add_timeout(0.03, function() pending = false; render() end)
+    mp.add_timeout(0.08, function() pending = false; render() end)
 end
 
 local function toggle_playlist()
@@ -351,7 +352,11 @@ local function do_button(id, b)
 end
 
 local function click()
-    if S.locked then return end
+    if S.locked then
+        if mp.get_property_native("user-data/pot-menu") == true
+            or mp.get_property_native("user-data/pot-prefs") == true then return end
+        S.locked = false; S.visible = false
+    end
     local g = geom(); S.g = g
     local p = mp.get_property_native("mouse-pos")
     if p then S.mx, S.my = p.x - g.ml, p.y - g.mt end
