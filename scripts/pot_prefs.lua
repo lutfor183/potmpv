@@ -2,7 +2,7 @@ local mp = require "mp"
 local utils = require "mp.utils"
 local opt = require "mp.options"
 
-local o = { font = "", scale = 1.0, accent = "3E9BD8", hide_delay = 2500, bar_alpha = "E8", playlist_width = 360, auto_load_folder = "yes", menu_scale = "1.0" }
+local o = { font = "", scale = 1.0, accent = "3E9BD8", hide_delay = 2500, bar_alpha = "E8", playlist_width = 360, auto_load_folder = "yes", menu_scale = 1.0, prefs_scale = 1.35 }
 opt.read_options(o, "pot")
 
 local FONT = o.font
@@ -378,7 +378,7 @@ local function geom()
     if aw < 120 or ah < 90 then aw, ah = 1280, 720 end
     P.ml, P.mt = ml, mt
     P.aw, P.ah = aw, ah
-    P.s = clamp(o.scale, 0.7, 3.0)
+    P.s = clamp(o.prefs_scale or o.scale, 0.7, 3.0)
     P.w = math.min(N(780 * P.s), aw - N(24 * P.s))
     P.h = math.min(N(560 * P.s), ah - N(24 * P.s))
     P.x = N((aw - P.w) / 2)
@@ -548,6 +548,9 @@ render = function()
                 if current_value(row) then
                     add(checkout(bx, by, N(18 * s), C.white))
                 end
+            elseif row.kind == "key" then
+                local vs = (P.capture == row.action) and "Press a key..." or key_name(KEYS[row.action])
+                add(text(rightX - N(4 * s), y + N(P.rowH / 2), 6, esc(vs), N(12 * s), hov and C.accent or C.dim))
             elseif row.kind == "choice" then
                 local vs = value_string(row)
                 add(text(rightX - N(4 * s), y + N(P.rowH / 2), 6, esc(vs), N(12 * s), hov and C.accent or C.dim))
@@ -638,6 +641,11 @@ local function open_prefs()
 end
 
 mp.register_script_message("open", open_prefs)
+mp.register_script_message("open-shortcuts", function()
+    if not P.open then open_prefs() end
+    P.cat = #cats; P.sel = 1; P.offset = 0
+    layout(); schedule()
+end)
 mp.register_script_message("close", close)
 
 -- baseline + persist

@@ -1,8 +1,8 @@
 local mp = require "mp"
 local opt = require "mp.options"
 
-local o = { font = "", scale = 1.0, menu_scale = 2.0, accent = "3E9BD8", bar_alpha = "E8", hide_delay = 2500, playlist_width = 360,
-    osub_api_key = "", osub_user = "", osub_pass = "", osub_lang = "eng", auto_load_folder = "yes" }
+local o = { font = "", scale = 1.0, menu_scale = 1.5, accent = "3E9BD8", bar_alpha = "E8", hide_delay = 2500, playlist_width = 360,
+    osub_api_key = "", osub_user = "", osub_pass = "", osub_lang = "eng", auto_load_folder = "yes", prefs_scale = 1.35 }
 opt.read_options(o, "pot")
 
 local FONT = o.font
@@ -230,7 +230,7 @@ local function open_sub(page, idx)
     while #M.pages > base do table.remove(M.pages) end
     M.pages[#M.pages + 1] = child
     M.hover_idx = nil
-    M.sub_key = nil
+    M.sub_key = tostring(idx)
     render()
 end
 
@@ -269,7 +269,12 @@ local function update_hover()
         local p = M.pages[i]
         if mx >= p.x and mx <= p.x + p.w and my >= p.y and my <= p.y + p.vis then
             if i < #M.pages then
-                while #M.pages > i do table.remove(M.pages) end
+                local row = p.lines[p.sel]
+                local key = row and tostring(p.sel) or nil
+                if key and key ~= M.sub_key then
+                    while #M.pages > i do table.remove(M.pages) end
+                    M.sub_key = nil
+                end
             end
             local top = p.y + N(5 * M.s)
             for _, d in ipairs(p.drawn) do
@@ -944,6 +949,9 @@ local function root_menu()
         { label = "Preferences...", accel = "F5", action = function()
             mp.commandv("script-message-to", "pot_prefs", "open")
         end },
+        { label = "Key bindings...", accel = "F6", action = function()
+            mp.commandv("script-message-to", "pot_prefs", "open-shortcuts")
+        end },
         { label = "About PotMPV", action = function()
             local ver = "1.1.2"
             local vf = io.open(utils.join_path(mp.get_property("config-dir") or ".", "VERSION"), "r")
@@ -1000,10 +1008,9 @@ end
 mp.observe_property("mouse-pos", "native", on_mouse)
 
 
-mp.add_periodic_timer(0.05, function()
+mp.add_periodic_timer(0.12, function()
     if M.open then
         update_hover()
         maybe_submenu()
-        render()
     end
 end)
