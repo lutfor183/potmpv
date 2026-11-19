@@ -5,4 +5,11 @@ if [ ! -f "$CFG/mpv.conf" ] && [ -d "$SHARE" ]; then
     mkdir -p "$CFG"
     cp -r "$SHARE/." "$CFG/" 2>/dev/null
 fi
-exec mpv --config-dir="$CFG" "$@"
+# Native Wayland mpv has no decorations here and OSD updates can flicker.
+# Use XWayland when available unless POTMPV_WAYLAND=1 is set.
+X11_ARGS=""
+if [ -z "$POTMPV_WAYLAND" ] && [ -n "$DISPLAY" ] && [ -n "$WAYLAND_DISPLAY" ]; then
+    unset WAYLAND_DISPLAY
+    X11_ARGS="--gpu-context=x11egl"
+fi
+exec mpv $X11_ARGS --config-dir="$CFG" "$@"

@@ -34,7 +34,14 @@ make_launcher() {
   cat > "$1" <<'L'
 #!/usr/bin/env bash
 CFG="${POTMPV_CONFIG:-$HOME/.config/potmpv}"
-exec mpv --config-dir="$CFG" "$@"
+# Native Wayland mpv has no decorations here and OSD updates can flicker.
+# Use XWayland when available unless POTMPV_WAYLAND=1 is set.
+X11_ARGS=""
+if [ -z "$POTMPV_WAYLAND" ] && [ -n "$DISPLAY" ] && [ -n "$WAYLAND_DISPLAY" ]; then
+    unset WAYLAND_DISPLAY
+    X11_ARGS="--gpu-context=x11egl"
+fi
+exec mpv $X11_ARGS --config-dir="$CFG" "$@"
 L
   chmod +x "$1"
 }
@@ -56,7 +63,14 @@ if [ "$MODE" = "portable" ]; then
 D="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MPV="mpv"
 [ -x "$D/mpv" ] && MPV="$D/mpv"
-exec "$MPV" --config-dir="$D/config" "$@"
+# Native Wayland mpv has no decorations here and OSD updates can flicker.
+# Use XWayland when available unless POTMPV_WAYLAND=1 is set.
+X11_ARGS=""
+if [ -z "$POTMPV_WAYLAND" ] && [ -n "$DISPLAY" ] && [ -n "$WAYLAND_DISPLAY" ]; then
+    unset WAYLAND_DISPLAY
+    X11_ARGS="--gpu-context=x11egl"
+fi
+exec "$MPV" $X11_ARGS --config-dir="$D/config" "$@"
 L
   chmod +x "$PORTABLE/potmpv"
   cp -f "$HERE/README.md" "$PORTABLE/" 2>/dev/null || true

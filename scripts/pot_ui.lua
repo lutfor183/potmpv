@@ -5,6 +5,7 @@ local utils = require "mp.utils"
 local o = {
     font = "",
     scale = 1.0,
+    menu_scale = 1.0,
     accent = "3E9BD8",
     bar_alpha = "E8",
     hide_delay = 2500,

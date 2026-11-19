@@ -1,7 +1,7 @@
 local mp = require "mp"
 local opt = require "mp.options"
 
-local o = { font = "", scale = 1.0, accent = "3E9BD8", bar_alpha = "E8", hide_delay = 2500, playlist_width = 360,
+local o = { font = "", scale = 1.0, menu_scale = 2.0, accent = "3E9BD8", bar_alpha = "E8", hide_delay = 2500, playlist_width = 360,
     osub_api_key = "", osub_user = "", osub_pass = "", osub_lang = "eng", auto_load_folder = "yes" }
 opt.read_options(o, "pot")
 
@@ -90,7 +90,7 @@ local function geom()
     local aw, ah = W - ml - mr, H - mt - mb
     if aw < 120 or ah < 90 then aw, ah = 1280, 720 end
     M.w, M.h, M.ml, M.mt = aw, ah, ml, mt
-    M.s = clamp(o.scale, 0.7, 3.0)
+    M.s = clamp(o.menu_scale or o.scale, 0.7, 3.5)
 end
 
 local function mouse()

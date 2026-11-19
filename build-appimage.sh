@@ -14,7 +14,14 @@ HERE=$(dirname "$(readlink -f "$0")")
 SHARE="$HERE/usr/share/potmpv"
 CFG="${POTMPV_CONFIG:-$HOME/.config/potmpv}"
 if [ ! -f "$CFG/mpv.conf" ]; then mkdir -p "$CFG"; cp -r "$SHARE/." "$CFG/"; fi
-exec mpv --config-dir="$CFG" "$@"
+# Native Wayland mpv has no decorations here and OSD updates can flicker.
+# Use XWayland when available unless POTMPV_WAYLAND=1 is set.
+X11_ARGS=""
+if [ -z "$POTMPV_WAYLAND" ] && [ -n "$DISPLAY" ] && [ -n "$WAYLAND_DISPLAY" ]; then
+    unset WAYLAND_DISPLAY
+    X11_ARGS="--gpu-context=x11egl"
+fi
+exec mpv $X11_ARGS --config-dir="$CFG" "$@"
 RUN
 chmod 755 AppDir/AppRun
 cp potmpv.desktop AppDir/potmpv.desktop
