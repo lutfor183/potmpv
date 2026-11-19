@@ -1,0 +1,8 @@
+#!/bin/sh
+SHARE="@SHARE@"
+CFG="${POTMPV_CONFIG:-$HOME/.config/potmpv}"
+if [ ! -f "$CFG/mpv.conf" ] && [ -d "$SHARE" ]; then
+    mkdir -p "$CFG"
+    cp -r "$SHARE/." "$CFG/" 2>/dev/null
+fi
+exec mpv --config-dir="$CFG" "$@"

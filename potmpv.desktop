@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=PotMPV
+Comment=PotPlayer-like mpv front-end
+Exec=potmpv %F
+Icon=potmpv
+Terminal=false
+Categories=AudioVideo;Player;Video;
+MimeType=video/*;audio/*;application/ogg;application/x-mpegurl;
+StartupNotify=false
