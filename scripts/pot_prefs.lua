@@ -2,7 +2,7 @@ local mp = require "mp"
 local utils = require "mp.utils"
 local opt = require "mp.options"
 
-local o = { font = "", scale = 1.0, accent = "3E9BD8", hide_delay = 2500, bar_alpha = "E8", playlist_width = 360 }
+local o = { font = "", scale = 1.0, accent = "3E9BD8", hide_delay = 2500, bar_alpha = "E8", playlist_width = 360, auto_load_folder = "yes" }
 opt.read_options(o, "pot")
 
 local FONT = o.font

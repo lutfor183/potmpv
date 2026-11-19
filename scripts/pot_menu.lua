@@ -939,7 +939,7 @@ local function root_menu()
             mp.commandv("script-message-to", "pot_prefs", "open")
         end },
         { label = "About PotMPV", action = function()
-            pcall_show("PotMPV 1.0.0  |  " .. tostring(mp.get_property("mpv-version")))
+            pcall_show("PotMPV 1.1.1  |  " .. tostring(mp.get_property("mpv-version")))
         end },
         { sep = true },
         { label = "Exit", accel = "Ctrl+Q", action = function() mp.commandv("quit") end },
