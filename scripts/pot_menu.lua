@@ -949,7 +949,7 @@ local function root_menu()
         { label = "Preferences...", accel = "F5", action = function()
             mp.commandv("script-message-to", "pot_prefs", "open")
         end },
-        { label = "Key bindings...", accel = "F6", action = function()
+        { label = "Key bindings...", accel = "F4", action = function()
             mp.commandv("script-message-to", "pot_prefs", "open-shortcuts")
         end },
         { label = "About PotMPV", action = function()
